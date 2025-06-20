@@ -1,31 +1,71 @@
-import Sidebar from "@/components/Sidebar";
 import Header from "@/components/Header";
-import Overview from "@/components/Overview";
-import Tasks from "@/components/Tasks";
-import Friends from "@/components/Friends";
-import { useState } from "react";
+import Overview from "@/components/Dashboard/Overview";
+import Tasks from "@/components/Dashboard/Tasks";
+import Friends from "@/components/Dashboard/Friends";
+import { useEffect, useState } from "react";
+import axios from "axios";
 
 const tabs = [{ label: "Overview" }, { label: "Tasks" }, { label: "Friends" }]; //Part of mininavbar
 
+// Interfaces
+interface UserData {
+  _id: string;
+  userName: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+}
+
+interface ClassData {
+  _id: string;
+  name: string;
+  timing: string;
+  location: string;
+}
+
 export default function Dashboard() {
   const [activeTab, setActiveTab] = useState("Overview");
+  const [classes, setClasses] = useState<ClassData[]>([]);
+  const token = localStorage.getItem("token");
+
+  //Pull class details from user details
+  useEffect(() => {
+    const fetchUserData = () => {
+      axios
+        .get<UserData>("http://localhost:3000/user/me", {
+          headers: { "x-auth-token": token },
+        })
+        .then((userRes) => {
+          console.log("success, change to not use hardcoded email");
+          return axios.get<ClassData[]>(
+            `http://localhost:3000/class/user/${userRes.data._id}`
+          );
+        })
+        .then((classRes) => {
+          setClasses(classRes.data);
+          console.log("success, change to not use hardcoded email");
+        })
+        .catch((err) => {
+          console.error("Error with user details", err);
+        });
+    };
+    fetchUserData();
+  }, []);
 
   //Part of mininavbar
   function renderContent() {
     switch (activeTab) {
       case "Tasks":
-        return <Tasks />
+        return <Tasks />;
       case "Friends":
-        return <Friends />
+        return <Friends />;
       default:
-        return <Overview/>
+        return <Overview />;
     }
   }
 
   return (
-    <div className="w-full min-h-screen bg-[#040726] flex py-3 pl-3 overflow-hidden">
-      <Sidebar />
-      <main className="flex-1 ml-3 mr-3 bg-[#0B103E] rounded-2xl p-6 flex flex-col">
+      <main className="flex-1 ml-3 mr-3 bg-[#0B103E] rounded-2xl p-6 flex flex-col min-h-0">
         <Header />
         {/* part of mininavbar */}
         <nav
@@ -54,9 +94,13 @@ export default function Dashboard() {
             );
           })}
         </nav>
-        {/* put mininavbar as a component later */}
-        {renderContent()}
+        {classes.length > 0 ? (
+          <div className="flex-1 min-h-0 overflow-hidden">
+            {renderContent()}
+          </div>
+        ) : (
+          renderContent()
+        )}
       </main>
-    </div>
   );
 }

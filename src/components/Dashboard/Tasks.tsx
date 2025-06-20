@@ -32,16 +32,18 @@ interface ClassData {
 export default function Tasks() {
   const [tasks, setTasks] = useState<TaskData[]>([]);
   const [classes, setClasses] = useState<ClassData[]>([]);
+  const token = localStorage.getItem("token");
 
   //Pull class details from user details
   useEffect(() => {
     const fetchUserData = () => {
       axios
-        .get<UserData>("http://localhost:4000/user/email/tejassraman@gmail.com")
+        .get<UserData>("http://localhost:3000/user/me",
+          { headers: { "x-auth-token": token } })
         .then((userRes) => {
           console.log("success, change to not use hardcoded email");
           return axios.get<ClassData[]>(
-            `http://localhost:4000/class/user/${userRes.data._id}`
+            `http://localhost:3000/class/user/${userRes.data._id}`
           );
         })
         .then((classRes) => {
@@ -60,7 +62,7 @@ export default function Tasks() {
     const fetchTaskData = () => {
       const requests = classes.map((cls) =>
         axios
-          .get<TaskData[]>(`http://localhost:4000/task/classid/${cls?._id}`)
+          .get<TaskData[]>(`http://localhost:3000/task/classid/${cls?._id}`)
           .then((res) => res.data)
       );
 
